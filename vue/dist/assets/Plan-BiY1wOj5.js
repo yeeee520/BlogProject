@@ -1,0 +1,1 @@
+import{f as e,m as t,t as n,y as r}from"./index-DJb2zNlm.js";var i={},a={class:`blank-page`};function o(n,i){return r(),t(`div`,a,[...i[0]||=[e(`div`,{class:`page-label`},`计划`,-1)]])}var s=n(i,[[`render`,o],[`__scopeId`,`data-v-94c9193f`]]);export{s as default};
