@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springboot.mapper.TravelPlanMapper">
+
+    <insert id="insert" parameterType="com.example.springboot.entity.TravelPlan" useGeneratedKeys="true" keyProperty="planId">
+        INSERT INTO travel_plan (title, description, cover_url, plan_date, status, sort_order)
+        VALUES (#{title}, #{description}, #{coverUrl}, #{planDate}, #{status}, #{sortOrder})
+    </insert>
+
+    <select id="selectById" resultType="com.example.springboot.entity.TravelPlan">
+        SELECT * FROM travel_plan WHERE plan_id = #{planId}
+    </select>
+
+    <select id="selectAll" resultType="com.example.springboot.entity.TravelPlan">
+        SELECT * FROM travel_plan
+        <where>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY sort_order DESC, create_time DESC
+    </select>
+
+    <update id="update" parameterType="com.example.springboot.entity.TravelPlan">
+        UPDATE travel_plan
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE plan_id = #{planId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM travel_plan WHERE plan_id = #{planId}
+    </delete>
+
+</mapper>
+

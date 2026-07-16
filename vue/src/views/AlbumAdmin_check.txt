@@ -1,0 +1,223 @@
+﻿<template>
+  <div class="album-admin-page">
+    <section class="admin-header">
+      <div class="header-left">
+        <router-link to="/album" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          返回相册
+        </router-link>
+        <h1 class="admin-title">相册管理</h1>
+      </div>
+      <el-button type="primary" @click="showUpload">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        上传照片
+      </el-button>
+    </section>
+
+    <el-table :data="photos" v-loading="loading" class="photo-table">
+      <el-table-column label="缩略图" width="80">
+        <template #default="{ row }">
+          <img v-if="row.url" :src="row.url" class="table-thumb" />
+          <div v-else class="table-thumb-empty">--</div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="title" label="标题" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="location" label="地点" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="photoDate" label="拍摄日期" width="110" />
+      <el-table-column label="标签" min-width="140">
+        <template #default="{ row }">
+          <div class="tags-cell" v-if="row.tags">
+            <el-tag v-for="t in row.tags.split(',')" :key="t" size="small" type="info" class="tag-item">{{ t.trim() }}</el-tag>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="80" align="center">
+        <template #default="{ row }">
+          <el-switch :model-value="row.status === 1" @change="toggleStatus(row)" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="140" align="center" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" @click="showEdit(row)">编辑</el-button>
+          <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- Upload Dialog -->
+    <el-dialog v-model="uploadVisible" title="上传照片" width="600px" destroy-on-close class="admin-dialog">
+      <el-form :model="uploadForm" label-width="80px">
+        <el-form-item label="选择图片" required>
+          <el-upload :auto-upload="false" :limit="1" :on-change="onFileChange" :on-remove="onFileRemove" accept="image/*" list-type="picture">
+            <el-button>选择文件</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="标题"><el-input v-model="uploadForm.title" placeholder="照片标题" /></el-form-item>
+        <el-form-item label="描述"><el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="照片描述" /></el-form-item>
+        <el-form-item label="拍摄地点"><el-input v-model="uploadForm.location" placeholder="如：云南·大理" /></el-form-item>
+        <el-form-item label="拍摄日期"><el-date-picker v-model="uploadForm.photoDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" /></el-form-item>
+        <el-form-item label="标签"><el-input v-model="uploadForm.tags" placeholder="多个标签用逗号分隔，如：风景,旅行" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadVisible = false">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUpload">上传</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Edit Dialog -->
+    <el-dialog v-model="editVisible" title="编辑照片" width="600px" destroy-on-close class="admin-dialog">
+      <el-form :model="editForm" label-width="80px">
+        <el-form-item label="标题"><el-input v-model="editForm.title" placeholder="照片标题" /></el-form-item>
+        <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="2" placeholder="照片描述" /></el-form-item>
+        <el-form-item label="拍摄地点"><el-input v-model="editForm.location" placeholder="如：云南·大理" /></el-form-item>
+        <el-form-item label="拍摄日期"><el-date-picker v-model="editForm.photoDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" /></el-form-item>
+        <el-form-item label="标签"><el-input v-model="editForm.tags" placeholder="多个标签用逗号分隔" /></el-form-item>
+        <el-form-item label="排序权重"><el-input-number v-model="editForm.sortOrder" :min="0" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="handleEdit">保存</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getPhotos, uploadPhoto, updatePhoto, deletePhoto } from '@/api/album'
+
+const photos = ref([])
+const loading = ref(false)
+const uploading = ref(false)
+const saving = ref(false)
+
+const uploadVisible = ref(false)
+const uploadForm = ref({ title: '', description: '', location: '', photoDate: '', tags: '' })
+const uploadFile = ref(null)
+
+const editVisible = ref(false)
+const editForm = ref({ photoId: null, title: '', description: '', location: '', photoDate: '', tags: '', sortOrder: 0 })
+
+async function loadPhotos() {
+  loading.value = true
+  try {
+    const res = await getPhotos()
+    if (res.code == 200) photos.value = res.data || []
+  } catch (e) { console.error(e) }
+  finally { loading.value = false }
+}
+
+function showUpload() {
+  uploadForm.value = { title: '', description: '', location: '', photoDate: '', tags: '' }
+  uploadFile.value = null
+  uploadVisible.value = true
+}
+
+function onFileChange(file) { uploadFile.value = file.raw }
+function onFileRemove() { uploadFile.value = null }
+
+async function handleUpload() {
+  if (!uploadFile.value) { ElMessage.warning('请先选择一张图片'); return }
+  uploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', uploadFile.value)
+    if (uploadForm.value.title) fd.append('title', uploadForm.value.title)
+    if (uploadForm.value.description) fd.append('description', uploadForm.value.description)
+    if (uploadForm.value.location) fd.append('location', uploadForm.value.location)
+    if (uploadForm.value.photoDate) fd.append('photoDate', uploadForm.value.photoDate)
+    if (uploadForm.value.tags) fd.append('tags', uploadForm.value.tags)
+    const res = await uploadPhoto(fd)
+    if (res.code == 200) { ElMessage.success('上传成功'); uploadVisible.value = false; loadPhotos() }
+    else { ElMessage.error(res.msg || res.message || '上传失败') }
+  } catch (e) { ElMessage.error('上传失败') }
+  finally { uploading.value = false }
+}
+
+function showEdit(row) {
+  editForm.value = {
+    photoId: row.photoId, title: row.title || '', description: row.description || '',
+    location: row.location || '', photoDate: row.photoDate || '', tags: row.tags || '', sortOrder: row.sortOrder || 0
+  }
+  editVisible.value = true
+}
+
+async function handleEdit() {
+  saving.value = true
+  try {
+    const { photoId, ...data } = editForm.value
+    const res = await updatePhoto(photoId, data)
+    if (res.code == 200) { ElMessage.success('保存成功'); editVisible.value = false; loadPhotos() }
+    else { ElMessage.error(res.msg || res.message || '保存失败') }
+  } catch (e) { ElMessage.error('保存失败') }
+  finally { saving.value = false }
+}
+
+async function toggleStatus(row) {
+  try {
+    const newStatus = row.status === 1 ? 0 : 1
+    const res = await updatePhoto(row.photoId, { status: newStatus })
+    if (res.code == 200) { row.status = newStatus; ElMessage.success(newStatus === 1 ? '已显示' : '已隐藏') }
+  } catch (e) { ElMessage.error('操作失败') }
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm('确定要删除这张照片吗？此操作不可撤销。', '删除确认', { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' })
+    const res = await deletePhoto(row.photoId)
+    if (res.code == 200) { ElMessage.success('已删除'); loadPhotos() }
+    else { ElMessage.error(res.msg || res.message || '删除失败') }
+  } catch (e) { /* cancelled */ }
+}
+
+onMounted(() => { loadPhotos() })
+</script>
+
+<style scoped>
+.album-admin-page {
+  padding-top: 70px; min-height: 100vh; background: var(--color-bg-black);
+  padding-left: 16px; padding-right: 16px; padding-bottom: 80px;
+}
+@media (min-width: 768px) { .album-admin-page { padding-left: 48px; padding-right: 48px; } }
+
+.admin-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto; padding: 40px 0 24px; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; flex-direction: column; gap: 8px; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; color: var(--color-gray-400); text-decoration: none; transition: color 0.3s;
+}
+.back-link:hover { color: var(--color-primary); }
+.admin-title { font-size: 24px; font-weight: 700; color: var(--color-primary-text); }
+
+.photo-table {
+  max-width: 1200px; margin: 0 auto;
+  --el-table-bg-color: var(--color-bg-dark);
+  --el-table-tr-bg-color: var(--color-bg-dark);
+  --el-table-header-bg-color: #0a0a0a;
+  --el-table-row-hover-bg-color: rgba(255,255,255,0.04);
+  --el-table-border-color: rgba(255,255,255,0.06);
+  --el-table-text-color: var(--color-primary-text);
+  --el-table-header-text-color: var(--color-gray-400);
+  --el-table-current-row-bg-color: rgba(255,255,255,0.06);
+  --el-table-expanded-cell-bg-color: var(--color-bg-dark);
+}
+.photo-table :deep(.el-table__inner-wrapper::before) { display: none; }
+.photo-table :deep(.el-table__empty-text) { color: var(--color-gray-500); }
+
+.table-thumb { width: 60px; height: 44px; object-fit: cover; border-radius: 6px; display: block; }
+.table-thumb-empty {
+  width: 60px; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: var(--color-bg-card); border-radius: 6px; font-size: 11px; color: var(--color-gray-500);
+}
+.tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag-item { max-width: 100px; }
+
+.admin-dialog :deep(.el-dialog) { background: var(--color-bg-dark) !important; }
+.admin-dialog :deep(.el-dialog__title) { color: var(--color-primary-text) !important; }
+.admin-dialog :deep(.el-dialog__header) { border-bottom: 1px solid rgba(255,255,255,0.06); }
+.admin-dialog :deep(.el-dialog__body) { padding-top: 20px; }
+</style>

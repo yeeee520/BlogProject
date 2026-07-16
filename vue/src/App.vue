@@ -1,7 +1,11 @@
 ﻿<template>
   <NavBar />
   <main class="main-content">
-    <RouterView />
+    <RouterView v-slot="{ Component }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </RouterView>
   </main>
 </template>
 
@@ -10,8 +14,11 @@ import NavBar from '@/components/NavBar.vue'
 </script>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; font-family: 'Inter','PingFang SC','Microsoft YaHei',sans-serif; background: #f5f7fa; color: #1a1a2e; }
-#app { min-height: 100vh; display: flex; flex-direction: column; }
-.main-content { flex: 1; display: flex; flex-direction: column; }
+@import '@/assets/css/global.css';
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 </style>

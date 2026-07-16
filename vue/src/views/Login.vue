@@ -13,9 +13,7 @@
         <el-form-item>
           <el-button type="primary" native-type="submit" :loading="loading" class="login-btn" round>登 录</el-button>
         </el-form-item>
-        <div class="login-hint">
-          测试账号: admin / 123456
-        </div>
+        <div class="login-hint">测试账号: admin / 123456</div>
       </el-form>
     </div>
   </div>
@@ -56,23 +54,30 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  min-height: calc(100vh - 64px); margin-top: 64px;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-black);
+  padding: 80px 16px 40px;
 }
 .login-card {
-  background: #fff; border-radius: 20px; padding: 48px 40px 36px;
-  width: 420px; max-width: 90vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  animation: cardIn 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+  background: var(--color-bg-dark);
+  border-radius: 16px;
+  padding: 48px 40px 36px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(222, 219, 200, 0.06);
+  animation: cardIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(20px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.login-title { font-size: 26px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; text-align: center; }
-.login-subtitle { font-size: 14px; color: #a0a4b8; margin-bottom: 32px; text-align: center; }
+.login-title { font-size: 26px; font-weight: 700; color: var(--color-primary-text); margin-bottom: 6px; text-align: center; }
+.login-subtitle { font-size: 14px; color: var(--color-gray-400); margin-bottom: 32px; text-align: center; }
 .login-form { width: 100%; }
 .login-btn { width: 100%; margin-top: 4px; }
-.login-hint { text-align: center; font-size: 12px; color: #c0c4d0; margin-top: 8px; }
+.login-hint { text-align: center; font-size: 12px; color: var(--color-gray-500); margin-top: 8px; }
 </style>

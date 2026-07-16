@@ -1,5 +1,5 @@
 server:
-  port: 6666
+  port: 8080
 spring:
   application:
     name: springboot
@@ -7,12 +7,25 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
-    url: jdbc:mysql://localhost:3306/code2026?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2b8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/blog?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2b8&allowPublicKeyRetrieval=true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 # 配置mybatis实体和xml映射
 mybatis:
-  ## 映射xml
   mapper-locations: classpath:mapper/*.xml
   configuration:
-    # 配置日志
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: true # 数据库下划线转换成驼峰字段
+    map-underscore-to-camel-case: true
+
+# COS 配置请通过 application-local.yaml 或服务器 application.properties 覆盖
+cos:
+  secret-id:
+  secret-key:
+  bucket-name: blog-photos-1453444415
+  region: ap-guangzhou
+
+jwt:
+  secret: BlogProjectSecretKey2026!MustBe256BitsLongForHMAC-SHA256Algorithm!!ExtraCharsForSafety!!
+  expiration: 604800000

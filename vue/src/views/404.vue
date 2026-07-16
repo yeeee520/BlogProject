@@ -11,14 +11,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
 const router = useRouter()
-function goHome() {
-  router.push('/manage')
-}
+function goHome() { router.push('/manage') }
 </script>
 
 <style scoped>
-.notfound-page { min-height: calc(100vh - 64px); margin-top: 64px; display: flex; align-items: center; justify-content: center; background: #f5f7fa; }
+.notfound-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--color-bg-black); padding-top: 64px; }
 .notfound-content { text-align: center; }
-.notfound-code { font-size: 100px; font-weight: 800; background: linear-gradient(135deg,#ff6b6b,#ffa94d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; margin-bottom: 16px; }
-.notfound-text { font-size: 18px; color: #8e8ea0; margin-bottom: 32px; }
+.notfound-code { font-size: 100px; font-weight: 800; color: var(--color-primary); opacity: 0.3; line-height: 1; margin-bottom: 16px; }
+.notfound-text { font-size: 18px; color: var(--color-gray-400); margin-bottom: 32px; }
 </style>

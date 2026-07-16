@@ -4,15 +4,32 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.springboot.mapper.UserMapper">
     <select id="selectManagerPage" resultType="com.example.springboot.entity.User">
-        select username,fans,focus,photo from `user`
+        select username AS nickname, fans, focus, photo from `user`
         where user_id=#{userId}
 
 
     </select>
     <select id="selectHeaderPage" resultType="com.example.springboot.entity.User">
-        select username,photo from `user`
+        select username AS nickname, photo from `user`
         where user_id=#{userId}
 
+    </select>
+
+    <select id="selectByName" resultType="com.example.springboot.entity.User">
+        SELECT user_id AS userId, username AS nickname, name AS account, password, token, fans, focus, photo
+        FROM `user`
+        WHERE name = #{account}
+    </select>
+
+    <insert id="insertUser" parameterType="com.example.springboot.entity.User" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO `user` (username, name, password, fans, focus)
+        VALUES (#{nickname}, #{account}, #{password}, #{fans}, #{focus})
+    </insert>
+
+    <select id="selectByUserId" resultType="com.example.springboot.entity.User">
+        SELECT user_id AS userId, username AS nickname, name AS account, password, token, fans, focus, photo
+        FROM `user`
+        WHERE user_id = #{userId}
     </select>
 
 </mapper>

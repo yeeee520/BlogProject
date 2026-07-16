@@ -90,3 +90,23 @@ CREATE TABLE IF NOT EXISTS `user_article_like` (
 -- 查看建表结果
 -- ========================================
 SHOW TABLES;
+
+-- ========================================
+-- 6. 相册照片表
+-- ========================================
+CREATE TABLE IF NOT EXISTS `album_photo` (
+    `photo_id`     BIGINT        NOT NULL AUTO_INCREMENT COMMENT '照片ID',
+    `title`        VARCHAR(128)  DEFAULT NULL             COMMENT '照片标题',
+    `description`  VARCHAR(512)  DEFAULT NULL             COMMENT '照片描述',
+    `url`          VARCHAR(500)  NOT NULL                 COMMENT '图片URL（COS地址）',
+    `location`     VARCHAR(128)  DEFAULT NULL             COMMENT '拍摄地点',
+    `photo_date`   DATE          DEFAULT NULL             COMMENT '拍摄日期',
+    `tags`         VARCHAR(256)  DEFAULT NULL             COMMENT '标签，逗号分隔',
+    `sort_order`   INT           NOT NULL DEFAULT 0       COMMENT '排序权重（越大越靠前）',
+    `status`       TINYINT       NOT NULL DEFAULT 1       COMMENT '状态：0=隐藏, 1=显示',
+    `create_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`photo_id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='相册照片表';

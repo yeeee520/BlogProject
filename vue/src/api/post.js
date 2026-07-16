@@ -1,4 +1,4 @@
-﻿import request from './request'
+import request from './request'
 
 const mockPosts = [
   { id: 1, title: '隐匿在深山的古村落', summary: '穿过蜿蜒的山路，一座有着三百年历史的古村落在晨雾中若隐若现。青石板路、斑驳的土墙、袅袅炊烟，时间在这里仿佛静止。', content: '# 隐匿在深山的古村落\n\n穿过蜿蜒的山路，一座有着三百年历史的古村落在晨雾中若隐若现。\n\n青石板路、斑驳的土墙、袅袅炊烟，时间在这里仿佛静止。当地人依旧保持着传统的农耕生活方式，日出而作，日落而息。\n\n## 古村的清晨\n\n清晨时分，薄雾笼罩着整个村落，远处的山峦若隐若现。公鸡的啼叫声打破了山村的宁静，炊烟从各家各户的烟囱中袅袅升起。\n\n走在青石板路上，露水打湿了鞋面，空气中弥漫着泥土和青草的气息。这里的一切都是那么自然、纯粹，让人忘却了城市的喧嚣。', author: '旅行者', authorAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642f92e672f1fepng.png', date: '2026-05-28', readTime: '8 min' },
@@ -9,23 +9,17 @@ const mockPosts = [
 ]
 
 export function getPostsList() {
-  return request.get('/api/posts').catch((err) => {
-    if (!err.response) {
-      return { code: 200, message: 'success', data: { total: mockPosts.length, list: mockPosts.map(({ content, ...rest }) => rest) } }
-    }
-    throw err
+  return request.get('/api/posts').catch(() => {
+    return { code: 200, message: 'success', data: { total: mockPosts.length, list: mockPosts.map(({ content, ...rest }) => rest) } }
   })
 }
 
 export function getPostDetail(id) {
-  return request.get('/api/posts/' + id).catch((err) => {
-    if (!err.response) {
-      const post = mockPosts.find((p) => p.id === Number(id))
-      if (post) {
-        return { code: 200, message: 'success', data: post }
-      }
-      return { code: 404, message: '帖子不存在' }
+  return request.get('/api/posts/' + id).catch(() => {
+    const post = mockPosts.find((p) => p.id === Number(id))
+    if (post) {
+      return { code: 200, message: 'success', data: post }
     }
-    throw err
+    return { code: 404, message: '帖子不存在' }
   })
 }

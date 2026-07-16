@@ -1,6 +1,5 @@
 package com.example.springboot.controller;
 
-
 import com.example.springboot.common.Result;
 import com.example.springboot.entity.User;
 import com.example.springboot.servise.UserService;
@@ -15,17 +14,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
     @Resource
     UserService userService;
-    //首页显示
+
     @GetMapping("/Manager")
-    public Result managerUserData(@RequestParam Integer userId){
+    public Result managerUserData(@RequestParam Long userId){
         User user=userService.managerPage(userId);
         return Result.success(user);
     }
-    //其他显示
+
     @GetMapping("/header")
-    public Result headerUserData(@RequestParam Integer userId){
+    public Result headerUserData(@RequestParam Long userId){
         User user=userService.headerPage(userId);
         return Result.success(user);
     }
-
 }

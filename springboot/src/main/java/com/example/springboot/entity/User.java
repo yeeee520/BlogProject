@@ -1,35 +1,37 @@
 package com.example.springboot.entity;
 
 public class User {
-    private Integer userId;
-    private String username;
-    private String name;
+    private Long userId;
+    private String nickname;
+    private String account;
     private String password;
     private String token;
     private String photo;
+    private Integer fans;
+    private Integer focus;
 
-    public Integer getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(Integer userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
-    public String getUsername() {
-        return username;
+    public String getNickname() {
+        return nickname;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
-    public String getName() {
-        return name;
+    public String getAccount() {
+        return account;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setAccount(String account) {
+        this.account = account;
     }
 
     public String getPassword() {
@@ -71,7 +73,4 @@ public class User {
     public void setFocus(Integer focus) {
         this.focus = focus;
     }
-
-    private Integer fans;
-    private Integer focus;
 }

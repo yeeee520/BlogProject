@@ -1,0 +1,38 @@
+# compiled
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+logs/
+*.log
+backend.err.log
+backend.log
+
+# env - 本地个性化配置，每个开发环境不一样
+application-local.yaml
+application-local.properties
+
+# Maven local repo
+.mvn_repo/
+
+# Node
+node_modules/
+
+# Vue build
+vue/dist/
+
+# zip / temp
+*.zip
+*.tar.gz
+.agents/
