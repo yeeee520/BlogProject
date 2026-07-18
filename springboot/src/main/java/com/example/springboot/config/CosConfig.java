@@ -21,8 +21,11 @@ public class CosConfig {
     @Value("${cos.region}")
     private String region;
 
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public COSClient cosClient() {
+        requireConfigured("COS_SECRET_ID", secretId);
+        requireConfigured("COS_SECRET_KEY", secretKey);
+        requireConfigured("COS_REGION", region);
         COSCredentials cred = new BasicCOSCredentials(secretId, secretKey);
         ClientConfig clientConfig = new ClientConfig(new Region(region));
         return new COSClient(cred, clientConfig);
@@ -33,6 +36,13 @@ public class CosConfig {
 
     @Bean
     public String cosBucketName() {
+        requireConfigured("COS_BUCKET_NAME", bucketName);
         return bucketName;
+    }
+
+    private void requireConfigured(String name, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(name + " 未配置");
+        }
     }
 }

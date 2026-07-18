@@ -23,8 +23,7 @@ public class TravelPlanService {
      */
     public TravelPlan createPlan(TravelPlan plan, MultipartFile coverFile) throws IOException {
         if (coverFile != null && !coverFile.isEmpty()) {
-            String key = cosService.generateKey(coverFile.getOriginalFilename());
-            String url = cosService.uploadFile(coverFile, key);
+            String url = cosService.uploadImage(coverFile, "plans", true);
             plan.setCoverUrl(url);
         }
         if (plan.getStatus() == null) {
@@ -66,8 +65,7 @@ public class TravelPlanService {
                     try { cosService.deleteFile(oldKey); } catch (Exception ignored) {}
                 }
             }
-            String key = cosService.generateKey(coverFile.getOriginalFilename());
-            String url = cosService.uploadFile(coverFile, key);
+            String url = cosService.uploadImage(coverFile, "plans", true);
             update.setCoverUrl(url);
         }
         update.setPlanId(id);
@@ -93,4 +91,3 @@ public class TravelPlanService {
         return true;
     }
 }
-

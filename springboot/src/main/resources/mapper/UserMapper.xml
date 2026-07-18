@@ -16,20 +16,34 @@
     </select>
 
     <select id="selectByName" resultType="com.example.springboot.entity.User">
-        SELECT user_id AS userId, username AS nickname, name AS account, password, token, fans, focus, photo
+        SELECT user_id AS userId, username AS nickname, name AS account, password, role, token, fans, focus, photo
         FROM `user`
         WHERE name = #{account}
     </select>
 
     <insert id="insertUser" parameterType="com.example.springboot.entity.User" useGeneratedKeys="true" keyProperty="userId">
-        INSERT INTO `user` (username, name, password, fans, focus)
-        VALUES (#{nickname}, #{account}, #{password}, #{fans}, #{focus})
+        INSERT INTO `user` (username, name, password, role, fans, focus)
+        VALUES (#{nickname}, #{account}, #{password}, #{role}, #{fans}, #{focus})
     </insert>
 
     <select id="selectByUserId" resultType="com.example.springboot.entity.User">
-        SELECT user_id AS userId, username AS nickname, name AS account, password, token, fans, focus, photo
+        SELECT user_id AS userId, username AS nickname, name AS account, password, role, token, fans, focus, photo
         FROM `user`
         WHERE user_id = #{userId}
     </select>
+
+    <update id="updateToken">
+        UPDATE `user` SET token = #{token} WHERE user_id = #{userId}
+    </update>
+
+    <insert id="upsertAdmin">
+        INSERT INTO `user` (username, name, password, role, token, fans, focus)
+        VALUES (#{account}, #{account}, #{password}, 'ADMIN', NULL, 0, 0)
+        ON DUPLICATE KEY UPDATE
+            username = VALUES(username),
+            password = VALUES(password),
+            role = 'ADMIN',
+            token = NULL
+    </insert>
 
 </mapper>

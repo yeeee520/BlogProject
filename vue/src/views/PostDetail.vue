@@ -40,6 +40,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getNote } from '@/api/travel'
 import { getPostDetail } from '@/api/post'
+import { renderSafeContent } from '@/utils/sanitizeContent'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,22 +50,7 @@ const error = ref('')
 
 function goHome() { router.push('/manage') }
 
-function renderMarkdown(text) {
-  if (!text) return ''
-  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-  return normalized.split('\n').map((line) => {
-    if (line.startsWith('### ')) return '<h3>' + line.slice(4) + '</h3>'
-    if (line.startsWith('## ')) return '<h2>' + line.slice(3) + '</h2>'
-    if (line.startsWith('# ')) return '<h1>' + line.slice(2) + '</h1>'
-    // markdown image: ![alt](url)
-    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
-    if (imgMatch) return '<div class="content-image-wrap"><img src="' + imgMatch[2] + '" alt="' + imgMatch[1] + '" class="content-image" loading="lazy" /></div>'
-    if (line.trim() === '') return '<br/>'
-    return '<p>' + line + '</p>'
-  }).join('')
-}
-
-const renderedContent = computed(() => renderMarkdown(post.value?.content || ''))
+const renderedContent = computed(() => renderSafeContent(post.value?.content || ''))
 
 onMounted(async () => {
   const id = route.params.id
@@ -122,4 +108,3 @@ onMounted(async () => {
 .detail-content :deep(.content-image-wrap) { margin: 16px 0; overflow: hidden; border-radius: 10px; background: var(--color-bg-card); }
 .detail-content :deep(.content-image) { width: 100%; max-height: 420px; object-fit: cover; display: block; border-radius: 10px; }
 </style>
-

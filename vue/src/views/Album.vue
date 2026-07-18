@@ -6,7 +6,7 @@
       <p class="page-subtitle">每一帧画面，都是一段旅程的见证。</p>
     </section>
 
-    <div v-if="authStore.isLoggedIn" class="admin-bar">
+    <div v-if="authStore.isAdmin" class="admin-bar">
       <router-link to="/album/manage" class="admin-link-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         管理相册
@@ -67,6 +67,7 @@
             <span v-if="selectedPhoto?.location">{{ selectedPhoto.location }}</span>
             <span v-if="selectedPhoto?.photoDate">{{ selectedPhoto.photoDate }}</span>
           </div>
+          <button v-if="selectedPhoto" class="download-btn" @click="downloadPhoto(selectedPhoto)">下载原图</button>
         </div>
       </div>
     </el-dialog>
@@ -75,8 +76,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import WordsPullUp from '@/components/WordsPullUp.vue'
-import { getPhotos, getTags } from '@/api/album'
+import { getPhotos, getTags, getPhotoDownloadUrl } from '@/api/album'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -111,6 +113,22 @@ function filterByTag(tag) { activeTag.value = tag; loadPhotos() }
 function openLightbox(index) { currentIndex.value = index; lightboxVisible.value = true }
 function prevPhoto() { currentIndex.value = (currentIndex.value - 1 + photos.value.length) % photos.value.length }
 function nextPhoto() { currentIndex.value = (currentIndex.value + 1) % photos.value.length }
+
+async function downloadPhoto(photo) {
+  try {
+    const res = await getPhotoDownloadUrl(photo.photoId)
+    if (res.code == 200 && res.data?.url) {
+      const link = document.createElement('a')
+      link.href = res.data.url
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    }
+  } catch (e) {
+    ElMessage.error('下载地址获取失败')
+  }
+}
 
 function handleKeydown(e) {
   if (!lightboxVisible.value) return
@@ -194,6 +212,8 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeydown) })
 .lightbox-info h3 { font-size: 18px; font-weight: 600; color: var(--color-primary-text); margin-bottom: 8px; }
 .lightbox-info p { font-size: 14px; color: var(--color-gray-400); line-height: 1.6; margin-bottom: 8px; }
 .lightbox-meta { display: flex; gap: 16px; font-size: 13px; color: var(--color-gray-500); }
+.download-btn { margin-top: 14px; padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: var(--color-primary-text); cursor: pointer; }
+.download-btn:hover { background: rgba(255,255,255,0.1); }
 :deep(.lightbox-dialog) { background: var(--color-bg-dark) !important; border-radius: 16px !important; }
 :deep(.el-dialog__headerbtn .el-dialog__close) { color: var(--color-gray-400); }
 

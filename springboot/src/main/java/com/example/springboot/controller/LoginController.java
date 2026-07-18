@@ -1,11 +1,21 @@
 package com.example.springboot.controller;
 
 import com.example.springboot.entity.User;
+import com.example.springboot.service.LoginAttemptService;
 import com.example.springboot.servise.UserService;
 import com.example.springboot.utils.JwtUtil;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +23,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class LoginController {
+
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String DUMMY_PASSWORD_HASH =
+            "$2a$12$srBmBF36CC3wCisNrEYkpupeMViumhryTk61EZTt.Jx5Y8GNS87bq";
 
     @Resource
     private UserService userService;
@@ -23,152 +37,103 @@ public class LoginController {
     @Resource
     private PasswordEncoder passwordEncoder;
 
+    @Resource
+    private LoginAttemptService loginAttemptService;
+
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> body,
+                                                      HttpServletRequest request) {
+        String clientKey = resolveClientIp(request);
+        if (loginAttemptService.isBlocked(clientKey)) {
+            return response(HttpStatus.TOO_MANY_REQUESTS, 429, "登录失败次数过多，请15分钟后重试", null);
+        }
+
         String username = body.get("username");
         String password = body.get("password");
-
-        Map<String, Object> result = new HashMap<>();
-
-        if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-            result.put("code", 400);
-            result.put("message", "用户名和密码不能为空");
-            result.put("data", null);
-            return result;
+        if (username == null || password == null || username.isBlank() || password.isBlank()) {
+            return response(HttpStatus.BAD_REQUEST, 400, "用户名和密码不能为空", null);
+        }
+        if (username.length() > 50 || password.length() > 200) {
+            loginAttemptService.recordFailure(clientKey);
+            return response(HttpStatus.BAD_REQUEST, 400, "用户名或密码格式错误", null);
         }
 
-        User user = userService.findByName(username);
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            result.put("code", 401);
-            result.put("message", "用户名或密码错误");
-            result.put("data", null);
-            return result;
+        User user = userService.findByName(username.trim());
+        // 即使账号不存在也执行 BCrypt，降低通过响应耗时枚举管理员账号的风险。
+        String storedHash = user == null ? DUMMY_PASSWORD_HASH : user.getPassword();
+        boolean passwordMatches = storedHash != null && passwordEncoder.matches(password, storedHash);
+        if (user == null || !ADMIN_ROLE.equals(user.getRole()) || !passwordMatches) {
+            loginAttemptService.recordFailure(clientKey);
+            return response(HttpStatus.UNAUTHORIZED, 401, "用户名或密码错误", null);
         }
 
+        loginAttemptService.recordSuccess(clientKey);
         String token = jwtUtil.generateToken(user.getUserId(), user.getAccount());
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", user.getUserId());
-        userData.put("username", user.getAccount());
-        userData.put("nickname", user.getNickname());
-        userData.put("avatar", user.getPhoto());
-        userData.put("bio", "");
+        // 每个账号只保留最后一次登录生成的 Token 哈希。
+        userService.updateToken(user.getUserId(), jwtUtil.hashToken(token));
 
         Map<String, Object> data = new HashMap<>();
         data.put("token", token);
-        data.put("user", userData);
-
-        result.put("code", 200);
-        result.put("message", "success");
-        result.put("data", data);
-        return result;
-    }
-
-    @PostMapping("/register")
-    public Map<String, Object> register(@RequestBody Map<String, String> body) {
-        String account = body.get("username");
-        String password = body.get("password");
-        String nickname = body.get("nickname");
-
-        Map<String, Object> result = new HashMap<>();
-
-        if (account == null || password == null || account.isEmpty() || password.isEmpty()) {
-            result.put("code", 400);
-            result.put("message", "用户名和密码不能为空");
-            result.put("data", null);
-            return result;
-        }
-
-        if (password.length() < 6) {
-            result.put("code", 400);
-            result.put("message", "密码长度不能少于6位");
-            result.put("data", null);
-            return result;
-        }
-
-        if (nickname == null || nickname.isEmpty()) {
-            nickname = account;
-        }
-
-        User existing = userService.findByName(account);
-        if (existing != null) {
-            result.put("code", 400);
-            result.put("message", "用户名已存在");
-            result.put("data", null);
-            return result;
-        }
-
-        User user = new User();
-        user.setAccount(account);
-        user.setNickname(nickname);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setFans(0);
-        user.setFocus(0);
-
-        userService.insertUser(user);
-
-        String token = jwtUtil.generateToken(user.getUserId(), user.getAccount());
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", user.getUserId());
-        userData.put("username", user.getAccount());
-        userData.put("nickname", user.getNickname());
-        userData.put("avatar", user.getPhoto());
-        userData.put("bio", "");
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("token", token);
-        data.put("user", userData);
-
-        result.put("code", 200);
-        result.put("message", "success");
-        result.put("data", data);
-        return result;
+        data.put("user", userData(user));
+        return response(HttpStatus.OK, 200, "success", data);
     }
 
     @GetMapping("/profile")
-    public Map<String, Object> profile(@RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Map<String, Object> result = new HashMap<>();
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            result.put("code", 401);
-            result.put("message", "未登录");
-            result.put("data", null);
-            return result;
+    public ResponseEntity<Map<String, Object>> profile(Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return response(HttpStatus.UNAUTHORIZED, 401, "未登录", null);
         }
+        return response(HttpStatus.OK, 200, "success", userData(user));
+    }
 
-        try {
-            String token = authHeader.substring(7);
-            var claims = jwtUtil.parseToken(token);
-            Long userId = claims.get("userId", Long.class);
-            User user = userService.findByUserId(userId);
-
-            if (user == null) {
-                result.put("code", 404);
-                result.put("message", "用户不存在");
-                result.put("data", null);
-                return result;
-            }
-
-            Map<String, Object> userData = new HashMap<>();
-            userData.put("id", user.getUserId());
-            userData.put("username", user.getAccount());
-            userData.put("nickname", user.getNickname());
-            userData.put("avatar", user.getPhoto());
-            userData.put("bio", "");
-            userData.put("postCount", 0);
-            userData.put("followerCount", user.getFans());
-            userData.put("followingCount", user.getFocus());
-
-            result.put("code", 200);
-            result.put("message", "success");
-            result.put("data", userData);
-            return result;
-        } catch (Exception e) {
-            result.put("code", 401);
-            result.put("message", "Token无效");
-            result.put("data", null);
-            return result;
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user != null) {
+            userService.updateToken(user.getUserId(), null);
         }
+        return response(HttpStatus.OK, 200, "已退出登录", null);
+    }
+
+    private User currentUser(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof Map<?, ?> principal)) {
+            return null;
+        }
+        Object rawUserId = principal.get("userId");
+        if (!(rawUserId instanceof Long userId)) {
+            return null;
+        }
+        return userService.findByUserId(userId);
+    }
+
+    private Map<String, Object> userData(User user) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", user.getUserId());
+        data.put("username", user.getAccount());
+        data.put("nickname", user.getNickname());
+        data.put("avatar", user.getPhoto());
+        data.put("role", user.getRole());
+        data.put("bio", "");
+        data.put("followerCount", user.getFans());
+        data.put("followingCount", user.getFocus());
+        return data;
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        // 生产环境由 Spring 的 ForwardedHeaderFilter 解析 Nginx 覆盖后的 X-Forwarded-For。
+        // 后端只绑定 127.0.0.1，外网不能直接伪造该请求头。
+        return request.getRemoteAddr();
+    }
+
+    private ResponseEntity<Map<String, Object>> response(HttpStatus status, int code,
+                                                          String message, Object data) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("code", code);
+        body.put("message", message);
+        body.put("data", data);
+        return ResponseEntity.status(status)
+                .cacheControl(CacheControl.noStore())
+                .body(body);
     }
 }

@@ -8,11 +8,11 @@ const router = createRouter({
     { path: '/home', component: () => import('@/views/Home.vue') },
     { path: '/about', component: () => import('@/views/About.vue') },
     { path: '/travels', component: () => import('@/views/Travels.vue') },
-    { path: '/travels/manage', component: () => import('@/views/TravelsAdmin.vue') },
+    { path: '/travels/manage', component: () => import('@/views/TravelsAdmin.vue'), meta: { requiresAdmin: true } },
     { path: '/album', component: () => import('@/views/Album.vue') },
-    { path: '/album/manage', component: () => import('@/views/AlbumAdmin.vue') },
+    { path: '/album/manage', component: () => import('@/views/AlbumAdmin.vue'), meta: { requiresAdmin: true } },
     { path: '/plan', component: () => import('@/views/Plan.vue') },
-    { path: '/plan/manage', component: () => import('@/views/PlanAdmin.vue') },
+    { path: '/plan/manage', component: () => import('@/views/PlanAdmin.vue'), meta: { requiresAdmin: true } },
     { path: '/toolbox', component: () => import('@/views/Toolbox.vue') },
     { path: '/login', component: () => import('@/views/Login.vue') },
     { path: '/post/:id', component: () => import('@/views/PostDetail.vue') },
@@ -22,4 +22,3 @@ const router = createRouter({
 })
 
 export default router
-

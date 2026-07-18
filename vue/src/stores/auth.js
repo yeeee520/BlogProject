@@ -1,13 +1,17 @@
 ﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { loginApi } from '@/api/auth'
+import { loginApi, logoutApi } from '@/api/auth'
 import { getUserProfile } from '@/api/user'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('token') || '')
+  // 初始状态始终为未登录，持久化 Token 需通过 profile 接口校验后才恢复。
+  const token = ref('')
   const user = ref(null)
+  const initialized = ref(false)
+  let initializationPromise = null
 
   const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => isLoggedIn.value && user.value?.role === 'ADMIN')
 
   function setToken(val) {
     token.value = val
@@ -29,25 +33,65 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchProfile() {
-    if (!token.value) return
     try {
       const res = await getUserProfile()
-      if (res.code === 200) {
+      if (Number(res.code) === 200) {
         user.value = res.data
+        return true
       }
     } catch {
-      // token invalid
+      return false
     }
+    return false
   }
 
-  function logout() {
+  function clearAuth() {
     setToken('')
     user.value = null
   }
 
-  if (token.value) {
-    fetchProfile()
+  async function logout() {
+    try {
+      if (token.value) await logoutApi()
+    } finally {
+      clearAuth()
+    }
   }
 
-  return { token, user, isLoggedIn, login, logout, fetchProfile }
+  async function initializeAuth() {
+    if (initialized.value) return isLoggedIn.value
+    if (initializationPromise) return initializationPromise
+
+    initializationPromise = (async () => {
+      const savedToken = localStorage.getItem('token') || ''
+      if (!savedToken) {
+        initialized.value = true
+        return false
+      }
+
+      const valid = await fetchProfile()
+      if (valid) {
+        token.value = savedToken
+      } else {
+        clearAuth()
+      }
+      initialized.value = true
+      return valid
+    })()
+
+    return initializationPromise
+  }
+
+  return {
+    token,
+    user,
+    initialized,
+    isLoggedIn,
+    isAdmin,
+    login,
+    logout,
+    clearAuth,
+    fetchProfile,
+    initializeAuth,
+  }
 })

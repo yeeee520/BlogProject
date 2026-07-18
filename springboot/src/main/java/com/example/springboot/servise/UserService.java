@@ -29,4 +29,12 @@ public class UserService {
     public User findByUserId(Long userId) {
         return userMapper.selectByUserId(userId);
     }
+
+    public void updateToken(Long userId, String token) {
+        userMapper.updateToken(userId, token);
+    }
+
+    public void upsertAdmin(String account, String passwordHash) {
+        userMapper.upsertAdmin(account, passwordHash);
+    }
 }

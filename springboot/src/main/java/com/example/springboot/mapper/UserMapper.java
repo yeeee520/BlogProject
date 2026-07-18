@@ -14,4 +14,8 @@ public interface UserMapper {
     int insertUser(User user);
 
     User selectByUserId(@Param("userId") Long userId);
+
+    int updateToken(@Param("userId") Long userId, @Param("token") String token);
+
+    int upsertAdmin(@Param("account") String account, @Param("password") String password);
 }

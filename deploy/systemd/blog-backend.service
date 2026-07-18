@@ -1,0 +1,32 @@
+[Unit]
+Description=Blog Backend Service
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blogapp
+Group=blogapp
+EnvironmentFile=/etc/blog-backend.env
+WorkingDirectory=/opt/blog
+ExecStart=/usr/bin/java -Xms256m -Xmx1024m -jar /opt/blog/springboot.jar
+Restart=on-failure
+RestartSec=5
+UMask=0027
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

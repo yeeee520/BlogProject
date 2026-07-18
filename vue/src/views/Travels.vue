@@ -6,7 +6,7 @@
       <p class="page-subtitle">每一次出发，都是对自我的重新发现。</p>
     </section>
 
-    <div v-if="authStore.isLoggedIn" class="admin-bar">
+    <div v-if="authStore.isAdmin" class="admin-bar">
       <router-link to="/travels/manage" class="admin-link-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         管理游记
@@ -135,4 +135,3 @@ onMounted(() => { loadNotes(); loadTags() })
 .post-summary { font-size: 14px; color: var(--color-gray-400); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
 .post-meta { display: flex; gap: 16px; font-size: 12px; color: var(--color-gray-500); }
 </style>
-

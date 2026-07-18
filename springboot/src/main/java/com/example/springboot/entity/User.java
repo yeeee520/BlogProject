@@ -1,10 +1,15 @@
 package com.example.springboot.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class User {
     private Long userId;
     private String nickname;
     private String account;
+    @JsonIgnore
     private String password;
+    private String role;
+    @JsonIgnore
     private String token;
     private String photo;
     private Integer fans;
@@ -40,6 +45,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public String getToken() {

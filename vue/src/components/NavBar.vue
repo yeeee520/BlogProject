@@ -58,9 +58,9 @@ function isActive(path) {
   return route.path === path
 }
 
-function handleCommand(cmd) {
+async function handleCommand(cmd) {
   if (cmd === 'logout') {
-    authStore.logout()
+    await authStore.logout()
     router.push('/manage')
   }
 }

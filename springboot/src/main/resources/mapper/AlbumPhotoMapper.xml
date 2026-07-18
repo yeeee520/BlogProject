@@ -3,12 +3,24 @@
 <mapper namespace="com.example.springboot.mapper.AlbumPhotoMapper">
 
     <insert id="insert" parameterType="com.example.springboot.entity.AlbumPhoto" useGeneratedKeys="true" keyProperty="photoId">
-        INSERT INTO album_photo (title, description, url, location, photo_date, tags, album_name, sort_order, status)
-        VALUES (#{title}, #{description}, #{url}, #{location}, #{photoDate}, #{tags}, #{albumName}, #{sortOrder}, #{status})
+        INSERT INTO album_photo (title, description, url, location, photo_date, tags, album_name, sort_order, status, is_public)
+        VALUES (#{title}, #{description}, #{url}, #{location}, #{photoDate}, #{tags}, #{albumName}, #{sortOrder}, #{status}, #{isPublic})
     </insert>
 
     <select id="selectById" resultType="com.example.springboot.entity.AlbumPhoto">
         SELECT * FROM album_photo WHERE photo_id = #{photoId}
+    </select>
+
+    <select id="selectByIds" resultType="com.example.springboot.entity.AlbumPhoto">
+        SELECT * FROM album_photo
+        WHERE photo_id IN
+        <foreach collection="photoIds" item="photoId" open="(" separator="," close=")">
+            #{photoId}
+        </foreach>
+    </select>
+
+    <select id="selectAllForAclSync" resultType="com.example.springboot.entity.AlbumPhoto">
+        SELECT * FROM album_photo
     </select>
 
     <select id="selectAll" resultType="com.example.springboot.entity.AlbumPhoto">
@@ -20,10 +32,13 @@
             <if test="tag != null and tag != ''">
                 AND FIND_IN_SET(#{tag}, tags)
             </if>
+            <if test="publicOnly == true">
+                AND is_public = 1
+            </if>
             <if test="albumName != null and albumName != ''">
                 AND album_name = #{albumName}
             </if>
-            <if test="albumName == null or albumName == ''">
+            <if test="albumName != null and albumName == ''">
                 AND (album_name IS NULL OR album_name = '')
             </if>
         </where>
@@ -42,6 +57,7 @@
             <if test="albumName != null">album_name = #{albumName},</if>
             <if test="sortOrder != null">sort_order = #{sortOrder},</if>
             <if test="status != null">status = #{status},</if>
+            <if test="isPublic != null">is_public = #{isPublic},</if>
         </set>
         WHERE photo_id = #{photoId}
     </update>
@@ -51,11 +67,34 @@
     </delete>
 
     <select id="selectTags" resultType="java.lang.String">
-        SELECT DISTINCT tags FROM album_photo WHERE tags IS NOT NULL AND tags != ''
+        SELECT DISTINCT tags
+        FROM album_photo
+        WHERE status = 1
+          AND tags IS NOT NULL
+          AND tags != ''
+        <if test="publicOnly == true">
+          AND is_public = 1
+        </if>
     </select>
 
     <select id="selectAlbumNames" resultType="java.lang.String">
-        SELECT DISTINCT album_name FROM album_photo WHERE album_name IS NOT NULL AND album_name != ''
+        SELECT DISTINCT album_name
+        FROM album_photo
+        WHERE status = 1
+          AND album_name IS NOT NULL
+          AND album_name != ''
+        <if test="publicOnly == true">
+          AND is_public = 1
+        </if>
     </select>
+
+    <update id="batchUpdateVisibility">
+        UPDATE album_photo
+        SET is_public = #{isPublic}
+        WHERE photo_id IN
+        <foreach collection="photoIds" item="photoId" open="(" separator="," close=")">
+            #{photoId}
+        </foreach>
+    </update>
 
 </mapper>

@@ -1,5 +1,7 @@
 package com.example.springboot.entity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -14,6 +16,8 @@ public class AlbumPhoto {
     private String albumName;
     private Integer sortOrder;
     private Integer status;
+    @JsonAlias("is_public")
+    private Integer isPublic;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -37,6 +41,8 @@ public class AlbumPhoto {
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public Integer getIsPublic() { return isPublic; }
+    public void setIsPublic(Integer isPublic) { this.isPublic = isPublic; }
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     public LocalDateTime getUpdateTime() { return updateTime; }

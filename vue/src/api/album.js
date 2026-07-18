@@ -8,6 +8,10 @@ export function getPhoto(id) {
   return request.get('/api/album/photos/' + id)
 }
 
+export function getPhotoDownloadUrl(id) {
+  return request.get('/api/album/photos/' + id + '/download-url')
+}
+
 export function uploadPhoto(formData) {
   return request.post('/api/album/photos', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -30,6 +34,10 @@ export function batchUploadPhotos(formData) {
   return request.post('/api/album/photos/batch', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
+}
+
+export function batchUpdateVisibility(photoIds, isPublic) {
+  return request.put('/api/album/photos/visibility', { photoIds, isPublic })
 }
 
 export function getAlbumNames() {

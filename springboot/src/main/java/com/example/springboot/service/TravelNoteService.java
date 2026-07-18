@@ -27,8 +27,7 @@ public class TravelNoteService {
      */
     public TravelNote createNote(TravelNote note, MultipartFile coverFile) throws IOException {
         if (coverFile != null && !coverFile.isEmpty()) {
-            String key = cosService.generateKey(coverFile.getOriginalFilename());
-            String url = cosService.uploadFile(coverFile, key);
+            String url = cosService.uploadImage(coverFile, "travel", true);
             note.setCoverUrl(url);
         }
         if (note.getUserId() == null) {
@@ -82,8 +81,7 @@ public class TravelNoteService {
                     try { cosService.deleteFile(oldKey); } catch (Exception ignored) {}
                 }
             }
-            String key = cosService.generateKey(coverFile.getOriginalFilename());
-            String url = cosService.uploadFile(coverFile, key);
+            String url = cosService.uploadImage(coverFile, "travel", true);
             update.setCoverUrl(url);
         }
         update.setNoteId(id);
@@ -114,8 +112,7 @@ public class TravelNoteService {
      * 上传游记内插图
      */
     public String uploadImage(MultipartFile file) throws IOException {
-        String key = cosService.generateKey(file.getOriginalFilename());
-        return cosService.uploadFile(file, key);
+        return cosService.uploadImage(file, "travel", true);
     }
 
     /**
@@ -135,4 +132,3 @@ public class TravelNoteService {
         return List.copyOf(tagSet);
     }
 }
-

@@ -14,7 +14,18 @@
       </el-button>
     </section>
 
-    <el-table :data="photos" v-loading="loading" class="photo-table">
+    <div class="batch-actions">
+      <span class="selection-count">已选择 {{ selectedPhotos.length }} 张</span>
+      <el-button size="small" type="success" plain :disabled="!selectedPhotos.length" @click="handleBatchVisibility(1)">
+        一键公开
+      </el-button>
+      <el-button size="small" type="info" plain :disabled="!selectedPhotos.length" @click="handleBatchVisibility(0)">
+        一键私密
+      </el-button>
+    </div>
+
+    <el-table ref="tableRef" :data="photos" row-key="photoId" v-loading="loading" class="photo-table" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="46" />
       <el-table-column label="缩略图" width="80">
         <template #default="{ row }">
           <img v-if="row.url" :src="row.url" class="table-thumb" />
@@ -36,8 +47,18 @@
           <el-switch :model-value="row.status === 1" @change="toggleStatus(row)" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="140" align="center" fixed="right">
+      <el-table-column label="可见性" width="110" align="center">
         <template #default="{ row }">
+          <el-tag v-if="row.isPublic === 1" type="success" size="small">公开</el-tag>
+          <el-tag v-else type="info" size="small" class="visibility-private">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            私密
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="200" align="center" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" @click="handleDownload(row)">下载</el-button>
           <el-button size="small" @click="showEdit(row)">编辑</el-button>
           <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -111,6 +132,9 @@
         <el-form-item label="标签">
           <el-input v-model="batchForm.tags" placeholder="多个标签用逗号分隔，如：风景,旅行" />
         </el-form-item>
+        <el-form-item label="默认公开">
+          <el-switch v-model="batchForm.isPublic" active-text="允许所有人查看" />
+        </el-form-item>
       </el-form>
 
       <!-- Upload result summary -->
@@ -136,6 +160,7 @@
         <el-form-item label="拍摄日期"><el-date-picker v-model="editForm.photoDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" /></el-form-item>
         <el-form-item label="标签"><el-input v-model="editForm.tags" placeholder="多个标签用逗号分隔" /></el-form-item>
         <el-form-item label="排序权重"><el-input-number v-model="editForm.sortOrder" :min="0" /></el-form-item>
+        <el-form-item label="公开照片"><el-switch v-model="editForm.isPublic" active-text="允许所有人查看" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
@@ -148,22 +173,24 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPhotos, updatePhoto, deletePhoto, batchUploadPhotos } from '@/api/album'
+import { getPhotos, updatePhoto, deletePhoto, batchUploadPhotos, batchUpdateVisibility, getPhotoDownloadUrl } from '@/api/album'
 
 const photos = ref([])
 const loading = ref(false)
 const uploading = ref(false)
 const saving = ref(false)
+const tableRef = ref(null)
+const selectedPhotos = ref([])
 
 const uploadVisible = ref(false)
 const dropActive = ref(false)
 const fileInputRef = ref(null)
 const batchFiles = ref([])
-const batchForm = reactive({ location: '', photoDate: '', tags: '' })
+const batchForm = reactive({ location: '', photoDate: '', tags: '', isPublic: false })
 const uploadResult = ref(null)
 
 const editVisible = ref(false)
-const editForm = ref({ photoId: null, title: '', description: '', location: '', photoDate: '', tags: '', sortOrder: 0 })
+const editForm = ref({ photoId: null, title: '', description: '', location: '', photoDate: '', tags: '', sortOrder: 0, isPublic: false })
 
 async function loadPhotos() {
   loading.value = true
@@ -180,6 +207,7 @@ function showUpload() {
   batchForm.location = ''
   batchForm.photoDate = ''
   batchForm.tags = ''
+  batchForm.isPublic = false
   uploadResult.value = null
   uploadVisible.value = true
 }
@@ -289,6 +317,7 @@ async function handleBatchUpload() {
     if (batchForm.location) fd.append('location', batchForm.location)
     if (batchForm.photoDate) fd.append('photoDate', batchForm.photoDate)
     if (batchForm.tags) fd.append('tags', batchForm.tags)
+    fd.append('is_public', batchForm.isPublic ? '1' : '0')
 
     try {
       const progressInterval = setInterval(() => {
@@ -340,7 +369,8 @@ function resetBatchAndClose() {
 function showEdit(row) {
   editForm.value = {
     photoId: row.photoId, title: row.title || '', description: row.description || '',
-    location: row.location || '', photoDate: row.photoDate || '', tags: row.tags || '', sortOrder: row.sortOrder || 0
+    location: row.location || '', photoDate: row.photoDate || '', tags: row.tags || '', sortOrder: row.sortOrder || 0,
+    isPublic: row.isPublic === 1
   }
   editVisible.value = true
 }
@@ -349,6 +379,7 @@ async function handleEdit() {
   saving.value = true
   try {
     const { photoId, ...data } = editForm.value
+    data.isPublic = data.isPublic ? 1 : 0
     const res = await updatePhoto(photoId, data)
     if (res.code == 200) { ElMessage.success('保存成功'); editVisible.value = false; loadPhotos() }
     else { ElMessage.error(res.msg || res.message || '保存失败') }
@@ -362,6 +393,43 @@ async function toggleStatus(row) {
     const res = await updatePhoto(row.photoId, { status: newStatus })
     if (res.code == 200) { row.status = newStatus; ElMessage.success(newStatus === 1 ? '已显示' : '已隐藏') }
   } catch (e) { ElMessage.error('操作失败') }
+}
+
+async function handleDownload(row) {
+  try {
+    const res = await getPhotoDownloadUrl(row.photoId)
+    if (res.code == 200 && res.data?.url) {
+      const link = document.createElement('a')
+      link.href = res.data.url
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    }
+  } catch (e) {
+    if (!e.isAuthExpired) ElMessage.error('下载地址获取失败')
+  }
+}
+
+function handleSelectionChange(selection) {
+  selectedPhotos.value = selection
+}
+
+async function handleBatchVisibility(isPublic) {
+  if (!selectedPhotos.value.length) return
+  try {
+    const photoIds = selectedPhotos.value.map(photo => photo.photoId)
+    const res = await batchUpdateVisibility(photoIds, isPublic)
+    if (res.code == 200) {
+      selectedPhotos.value.forEach(photo => { photo.isPublic = isPublic })
+      tableRef.value?.clearSelection()
+      ElMessage.success(isPublic === 1 ? '已批量设为公开' : '已批量设为私密')
+    } else {
+      ElMessage.error(res.msg || res.message || '批量操作失败')
+    }
+  } catch (e) {
+    if (!e.isAuthExpired) ElMessage.error('批量操作失败')
+  }
 }
 
 async function handleDelete(row) {
@@ -395,6 +463,12 @@ onMounted(() => { loadPhotos() })
 .back-link:hover { color: var(--color-primary); }
 .admin-title { font-size: 24px; font-weight: 700; color: var(--color-primary-text); }
 
+.batch-actions {
+  display: flex; align-items: center; gap: 8px;
+  max-width: 1200px; margin: 0 auto 12px;
+}
+.selection-count { margin-right: auto; font-size: 13px; color: var(--color-gray-400); }
+
 .photo-table {
   max-width: 1200px; margin: 0 auto;
   --el-table-bg-color: var(--color-bg-dark);
@@ -417,6 +491,7 @@ onMounted(() => { loadPhotos() })
 }
 .tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag-item { max-width: 100px; }
+.visibility-private :deep(.el-tag__content) { display: inline-flex; align-items: center; gap: 4px; }
 
 .admin-dialog :deep(.el-dialog) { background: var(--color-bg-dark) !important; }
 .admin-dialog :deep(.el-dialog__title) { color: var(--color-primary-text) !important; }

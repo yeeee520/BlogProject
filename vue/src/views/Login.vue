@@ -13,7 +13,7 @@
         <el-form-item>
           <el-button type="primary" native-type="submit" :loading="loading" class="login-btn" round>登 录</el-button>
         </el-form-item>
-        <div class="login-hint">测试账号: admin / 123456</div>
+        <div class="login-hint">管理员登录</div>
       </el-form>
     </div>
   </div>
@@ -28,7 +28,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref(null)
-const form = reactive({ username: 'admin', password: '123456' })
+const form = reactive({ username: '', password: '' })
 const loading = ref(false)
 
 const rules = {
@@ -43,7 +43,10 @@ async function handleLogin() {
   try {
     await authStore.login(form)
     ElMessage.success('登录成功')
-    router.push('/manage')
+    const redirect = typeof router.currentRoute.value.query.redirect === 'string'
+      ? router.currentRoute.value.query.redirect
+      : '/manage'
+    router.push(redirect)
   } catch (e) {
     ElMessage.error(e.message || '登录失败')
   } finally {

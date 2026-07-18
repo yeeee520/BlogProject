@@ -6,7 +6,7 @@
       <p class="page-subtitle">用目标驱动旅程，用计划丈量远方。</p>
     </section>
 
-    <div v-if="authStore.isLoggedIn" class="admin-bar">
+    <div v-if="authStore.isAdmin" class="admin-bar">
       <router-link to="/plan/manage" class="admin-link-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         管理计划
@@ -110,4 +110,3 @@ onMounted(() => { loadPlans() })
 .plan-desc { font-size: 14px; color: var(--color-gray-400); line-height: 1.7; margin-bottom: 12px; }
 .plan-date { font-size: 12px; color: var(--color-gray-500); }
 </style>
-
